@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tamil Nadu Weather Explorer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #0066cc;
+            --secondary: #004080;
+            --accent: #ff9933;
+            --text: #333;
+            --light-bg: #f5f7fa;
+            --card-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: var(--light-bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: url('https://www.tn.gov.in/sites/default/files/2021-03/tamilnadu-map_0.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-blend-mode: overlay;
+            background-color: rgba(245, 247, 250, 0.9);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        h1 {
+            color: var(--secondary);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            color: var(--primary);
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+        }
+
+        .selection-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        select {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 2px solid var(--primary);
+            appearance: none;
+            background-color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            padding-right: 3rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 102, 204, 0.1);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255, 153, 51, 0.2);
+        }
+
+        .select-wrapper::after {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            right: 1.5rem;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--primary);
+        }
+
+        .weather-display {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .weather-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .current-weather {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .weather-main {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .location {
+            font-size: 1.8rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .date-time {
+            color: #666;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .temp-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .current-temp {
+            font-size: 4rem;
+            font-weight: 300;
+            color: var(--text);
+            margin-right: 1rem;
+            line-height: 1;
+        }
+
+        .weather-icon {
+            width: 100px;
+            height: 100px;
+            margin-right: 1rem;
+        }
+
+        .weather-desc {
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            text-transform: capitalize;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .detail-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .detail-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+        }
+
+        .detail-text {
+            flex: 1;
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.2rem;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* Visualization Styles */
+        .visualization-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .visualization-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .visualization-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .hourly-forecast {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 1rem 0;
+        }
+
+        .hour-card {
+            min-width: 80px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .hour-card:hover {
+            transform: scale(1.05);
+        }
+
+        .hour-time {
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .hour-temp {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .hour-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0.5rem auto;
+        }
+
+        /* Daily Forecast */
+        .daily-forecast {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .day-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .day-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .day-name {
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .day-icon {
+            width: 50px;
+            height: 50px;
+            margin: 0.5rem auto;
+        }
+
+        .day-temp {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* SMS Alert Section */
+        .sms-alert {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .sms-form {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .sms-form input {
+            padding: 1rem;
+            border-radius: 12px;
+            border: 2px solid var(--primary);
+            font-size: 1rem;
+        }
+
+        .sms-form button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .sms-form button:hover {
+            background: var(--secondary);
+        }
+
+        /* Loader */
+        .loader {
+            display: none;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Detail Page (hidden by default) */
+        .detail-page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--light-bg);
+            z-index: 100;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .close-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .selection-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .current-weather {
+                grid-template-columns: 1fr;
+            }
+            
+            .weather-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .sms-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .daily-forecast {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Tamil Nadu Weather Explorer</h1>
+            <p class="subtitle">Real-time weather information for all districts and cities of Tamil Nadu</p>
+            
+            <div class="selection-container">
+                <div class="select-wrapper">
+                    <select id="district-select">
+                        <option value="" disabled selected>Select a district</option>
+                    </select>
+                </div>
+                
+                <div class="select-wrapper">
+                    <select id="city-select" disabled>
+                        <option value="" disabled selected>Select a city</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <div class="loader" id="loader"></div>
+
+        <div class="weather-display" id="weather-display" style="display: none;">
+            <div class="weather-card">
+                <div class="current-weather">
+                    <div class="weather-main">
+                        <h2 class="location" id="location">-</h2>
+                        <p class="date-time" id="date-time">-</p>
+                        
+                        <div class="temp-container">
+                            <span class="current-temp" id="current-temp">-</span>
+                            <img class="weather-icon" id="weather-icon" src="" alt="Weather Icon">
+                        </div>
+                        
+                        <p class="weather-desc" id="weather-desc">-</p>
+                    </div>
+                    
+                    <div class="weather-details">
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-temperature-low"></i>
+                            </div>
+                            <div class="detail-text">
+                                <div class="detail-label">Feels Like</div>
+                                <div class="detail-value" id="feels-like">-</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-tint"></i>
+                            </div>
+                            <div class="detail-text">
+                                <div class="detail-label">Humidity</div>
+                                <div class="detail-value" id="humidity">-</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-wind"></i>
+                            </div>
+                            <div class="detail-text">
+                                <div class="detail-label">Wind Speed</div>
+                                <div class="detail-value" id="wind-speed">-</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-compress-alt"></i>
+                            </div>
+                            <div class="detail-text">
+                                <div class="detail-label">Pressure</div>
+                                <div class="detail-value" id="pressure">-</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <div class="detail-text">
+                                <div class="detail-label">UV Index</div>
+                                <div class="detail-value" id="uv-index">-</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="detail-text">
+                                <div class="detail-label">Visibility</div>
+                                <div class="detail-value" id="visibility">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="visualization-container">
+                    <div class="visualization-card" id="hourly-chart-card">
+                        <h4>Hourly Temperature Forecast</h4>
+                        <div class="chart-container">
+                            <canvas id="temperature-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-card" id="daily-chart-card">
+                        <h4>7-Day Forecast</h4>
+                        <div class="daily-forecast" id="daily-forecast">
+                            <!-- Daily forecast cards will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sms-alert">
+                <h3>Get Hourly Weather Alerts</h3>
+                <p>Register your mobile number to receive hourly weather updates via SMS</p>
+                
+                <div class="sms-form">
+                    <input type="tel" id="phone-number" placeholder="Enter 10-digit mobile number" pattern="[0-9]{10}" required>
+                    <button id="register-btn"><i class="fas fa-bell"></i> Enable Alerts</button>
+                </div>
+                
+                <p id="sms-status" style="margin-top: 1rem; font-size: 0.9rem;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Page -->
+    <div class="detail-page" id="detail-page">
+        <div class="container">
+            <div class="detail-header">
+                <h2 id="detail-location">Location Details</h2>
+                <button class="close-btn" id="close-detail"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="weather-card">
+                <div id="detail-content">
+                    <!-- Detailed weather content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // District and city data
+        const districtCityData = {
+            "Ariyalur": ["Ariyalur", "Jayankondam", "Udayarpalayam"],
+            "Chengalpattu": ["Chengalpattu", "Mahabalipuram", "Tambaram"],
+            "Chennai": ["Chennai", "Ambattur", "Madhavaram"],
+            "Coimbatore": ["Coimbatore", "Mettupalayam", "Pollachi"],
+            "Cuddalore": ["Cuddalore", "Chidambaram", "Panruti"],
+            "Dharmapuri": ["Dharmapuri", "Hosur", "Krishnagiri"],
+            "Dindigul": ["Dindigul", "Palani", "Kodaikanal"],
+            "Erode": ["Erode", "Gobichettipalayam", "Bhavani"],
+            "Kallakurichi": ["Kallakurichi", "Sankarapuram", "Ulundurpettai"],
+            "Kancheepuram": ["Kancheepuram", "Chengalpattu", "Mahabalipuram"],
+            "Kanniyakumari": ["Kanniyakumari", "Nagercoil", "Padmanabhapuram"],
+            "Karur": ["Karur", "Kulithalai", "Thanthoni"],
+            "Krishnagiri": ["Krishnagiri", "Hosur", "Uthangarai"],
+            "Madurai": ["Madurai", "Melur", "Thirumangalam"],
+            "Mayiladuthurai": ["Mayiladuthurai", "Sirkali", "Tharangambadi"],
+            "Nagapattinam": ["Nagapattinam", "Velankanni", "Vedaranyam"],
+            "Namakkal": ["Namakkal", "Rasipuram", "Tiruchengode"],
+            "Nilgiris": ["Ooty", "Coonoor", "Gudalur"],
+            "Perambalur": ["Perambalur", "Ariyalur", "Kunnam"],
+            "Pudukkottai": ["Pudukkottai", "Aranthangi", "Iluppur"],
+            "Ramanathapuram": ["Ramanathapuram", "Paramakudi", "Rameswaram"],
+            "Ranipet": ["Ranipet", "Arakkonam", "Arcot"],
+            "Salem": ["Salem", "Attur", "Mettur"],
+            "Sivaganga": ["Sivaganga", "Karaikkudi", "Devakottai"],
+            "Tenkasi": ["Tenkasi", "Sankarankovil", "Sivagiri"],
+            "Thanjavur": ["Thanjavur", "Kumbakonam", "Pattukkottai"],
+            "Theni": ["Theni", "Bodinayakkanur", "Cumbum"],
+            "Thoothukudi": ["Thoothukudi", "Tiruchendur", "Kovilpatti"],
+            "Tiruchirappalli": ["Tiruchirappalli", "Srirangam", "Thuraiyur"],
+            "Tirunelveli": ["Tirunelveli", "Ambasamudram", "Cheranmahadevi"],
+            "Tirupathur": ["Tirupathur", "Vaniyambadi", "Ambur"],
+            "Tiruppur": ["Tiruppur", "Avanishi", "Palladam"],
+            "Tiruvallur": ["Tiruvallur", "Ponneri", "Gummidipoondi"],
+            "Tiruvannamalai": ["Tiruvannamalai", "Chengam", "Polur"],
+            "Tiruvarur": ["Tiruvarur", "Mannargudi", "Needamangalam"],
+            "Vellore": ["Vellore", "Katpadi", "Arakkonam"],
+            "Viluppuram": ["Viluppuram", "Tindivanam", "Gingee"],
+            "Virudhunagar": ["Virudhunagar", "Aruppukkottai", "Sivakasi"]
+        };
+
+        // DOM Elements
+        const districtSelect = document.getElementById('district-select');
+        const citySelect = document.getElementById('city-select');
+        const weatherDisplay = document.getElementById('weather-display');
+        const loader = document.getElementById('loader');
+        const phoneNumberInput = document.getElementById('phone-number');
+        const registerBtn = document.getElementById('register-btn');
+        const smsStatusElement = document.getElementById('sms-status');
+        const detailPage = document.getElementById('detail-page');
+        const closeDetailBtn = document.getElementById('close-detail');
+        const detailLocation = document.getElementById('detail-location');
+        const detailContent = document.getElementById('detail-content');
+        const hourlyChartCard = document.getElementById('hourly-chart-card');
+        const dailyChartCard = document.getElementById('daily-chart-card');
+
+        // Weather Display Elements
+        const locationElement = document.getElementById('location');
+        const dateTimeElement = document.getElementById('date-time');
+        const currentTempElement = document.getElementById('current-temp');
+        const weatherIconElement = document.getElementById('weather-icon');
+        const weatherDescElement = document.getElementById('weather-desc');
+        const feelsLikeElement = document.getElementById('feels-like');
+        const humidityElement = document.getElementById('humidity');
+        const windSpeedElement = document.getElementById('wind-speed');
+        const pressureElement = document.getElementById('pressure');
+        const uvIndexElement = document.getElementById('uv-index');
+        const visibilityElement = document.getElementById('visibility');
+
+        // Initialize districts dropdown
+        function initializeDistricts() {
+            const districts = Object.keys(districtCityData).sort();
+            districts.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                districtSelect.appendChild(option);
+            });
+        }
+
+        // Update cities dropdown based on selected district
+        districtSelect.addEventListener('change', (e) => {
+            const district = e.target.value;
+            citySelect.innerHTML = '<option value="" disabled selected>Select a city</option>';
+            
+            if (district) {
+                citySelect.disabled = false;
+                districtCityData[district].forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+            } else {
+                citySelect.disabled = true;
+            }
+        });
+
+        // Fetch real weather data from Visual Crossing API
+        async function fetchWeatherData(city, district) {
+            try {
+                loader.style.display = 'block';
+                weatherDisplay.style.display = 'none';
+                
+                // First try with city name
+                let response = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${encodeURIComponent(city)},Tamil Nadu,India?unitGroup=us&key=DJQ2CNMD97ZCW68YN3YSSJ9CW&contentType=json`);
+                
+                // If city not found, try with district name
+                if (!response.ok) {
+                    response = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${encodeURIComponent(district)},Tamil Nadu,India?unitGroup=us&key=DJQ2CNMD97ZCW68YN3YSSJ9CW&contentType=json`);
+                }
+                
+                if (!response.ok) {
+                    throw new Error('Location not found');
+                }
+                
+                const data = await response.json();
+                return processWeatherData(data, city, district);
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                throw error;
+            } finally {
+                loader.style.display = 'none';
+                weatherDisplay.style.display = 'grid';
+            }
+        }
+
+        // Process Visual Crossing API response
+        function processWeatherData(data, city, district) {
+            const current = data.currentConditions;
+            const days = data.days;
+            
+            return {
+                address: data.resolvedAddress || `${city}, ${district}, Tamil Nadu`,
+                currentConditions: {
+                    temp: current.temp,
+                    feelslike: current.feelslike,
+                    humidity: current.humidity,
+                    windspeed: current.windspeed,
+                    winddir: current.winddir,
+                    pressure: current.pressure,
+                    uvindex: current.uvindex,
+                    visibility: current.visibility,
+                    conditions: current.conditions,
+                    icon: current.icon,
+                    sunrise: days[0].sunrise,
+                    sunset: days[0].sunset,
+                    precip: current.precip,
+                    snow: current.snow
+                },
+                hourly: days[0].hours.map(hour => ({
+                    time: new Date(hour.datetimeEpoch * 1000).toLocaleTimeString([], { hour: '2-digit' }),
+                    temp: hour.temp,
+                    precip: hour.precip,
+                    precipProb: hour.precipprob,
+                    windspeed: hour.windspeed,
+                    winddir: hour.winddir,
+                    conditions: hour.conditions,
+                    icon: hour.icon
+                })),
+                daily: days.slice(0, 7).map(day => ({
+                    date: new Date(day.datetimeEpoch * 1000).toLocaleDateString('en-IN', { 
+                        weekday: 'long', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    }),
+                    tempmax: day.tempmax,
+                    tempmin: day.tempmin,
+                    conditions: day.conditions,
+                    icon: day.icon,
+                    precip: day.precip,
+                    precipProb: day.precipprob,
+                    windspeed: day.windspeed,
+                    winddir: day.winddir,
+                    description: day.description
+                }))
+            };
+        }
+
+        // Update UI with weather data
+        function updateWeatherUI(data) {
+            // Current weather
+            locationElement.textContent = data.address;
+            
+            const now = new Date();
+            dateTimeElement.textContent = now.toLocaleDateString('en-IN', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            currentTempElement.textContent = `${Math.round(data.currentConditions.temp)}°`;
+            weatherDescElement.textContent = data.currentConditions.conditions;
+            
+            // Set weather icon
+            weatherIconElement.src = getWeatherIcon(data.currentConditions.icon);
+            weatherIconElement.alt = data.currentConditions.conditions;
+            
+            // Weather details
+            feelsLikeElement.textContent = `${Math.round(data.currentConditions.feelslike)}°`;
+            humidityElement.textContent = `${data.currentConditions.humidity}%`;
+            windSpeedElement.textContent = `${Math.round(data.currentConditions.windspeed)} mph`;
+            pressureElement.textContent = `${data.currentConditions.pressure} mb`;
+            uvIndexElement.textContent = data.currentConditions.uvindex;
+            visibilityElement.textContent = `${Math.round(data.currentConditions.visibility)} miles`;
+            
+            // Create visualizations
+            createTemperatureChart(data.hourly);
+            updateDailyForecast(data.daily);
+            
+            // Set up click handlers for visualizations
+            setupDetailHandlers(data);
+        }
+
+        // Create temperature trend chart
+        function createTemperatureChart(hourlyData) {
+            const ctx = document.getElementById('temperature-chart').getContext('2d');
+            
+            // Destroy previous chart if it exists
+            if (window.tempChart) {
+                window.tempChart.destroy();
+            }
+            
+            window.tempChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hourlyData.map(h => h.time),
+                    datasets: [{
+                        label: 'Temperature (°F)',
+                        data: hourlyData.map(h => h.temp),
+                        borderColor: 'rgba(255, 153, 51, 1)',
+                        backgroundColor: 'rgba(255, 153, 51, 0.2)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Temp: ${context.parsed.y}°F`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: Math.min(...hourlyData.map(h => h.temp)) - 2,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '°';
+                                }
+                            }
+                        }
+                    },
+                    onClick: function(evt, elements) {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            showHourDetail(hourlyData[index]);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update daily forecast cards
+        function updateDailyForecast(dailyData) {
+            const container = document.getElementById('daily-forecast');
+            container.innerHTML = '';
+            
+            dailyData.forEach(day => {
+                const card = document.createElement('div');
+                card.className = 'day-card';
+                card.dataset.day = JSON.stringify(day);
+                card.innerHTML = `
+                    <div class="day-name">${day.date.split(',')[0]}</div>
+                    <img class="day-icon" src="${getWeatherIcon(day.icon)}" alt="${day.conditions}">
+                    <div class="day-temp">${Math.round(day.tempmax)}°/${Math.round(day.tempmin)}°</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Set up click handlers for detail views
+        function setupDetailHandlers(data) {
+            // Hourly chart click
+            hourlyChartCard.addEventListener('click', () => {
+                showDetailPage(data, 'hourly');
+            });
+            
+            // Daily forecast click
+            dailyChartCard.addEventListener('click', () => {
+                showDetailPage(data, 'daily');
+            });
+            
+            // Individual day cards click
+            document.querySelectorAll('.day-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const dayData = JSON.parse(card.dataset.day);
+                    showDayDetail(dayData);
+                });
+            });
+        }
+
+        // Show detail page
+        function showDetailPage(data, type) {
+            detailLocation.textContent = `${data.address} - ${type === 'hourly' ? 'Hourly Forecast' : '7-Day Forecast'}`;
+            detailContent.innerHTML = '';
+            
+            if (type === 'hourly') {
+                // Create detailed hourly view
+                const hourlyHTML = data.hourly.map(hour => `
+                    <div class="detail-hour">
+                        <div>${hour.time}</div>
+                        <img src="${getWeatherIcon(hour.icon)}" alt="Weather" width="40">
+                        <div>${Math.round(hour.temp)}°F</div>
+                        <div>Precip: ${hour.precipProb}%</div>
+                        <div>Wind: ${Math.round(hour.windspeed)} mph</div>
+                        <div>Humidity: ${hour.humidity}%</div>
+                    </div>
+                `).join('');
+                
+                detailContent.innerHTML = `
+                    <h3>24-Hour Detailed Forecast</h3>
+                    <div class="hourly-detail-grid">
+                        ${hourlyHTML}
+                    </div>
+                    <style>
+                        .hourly-detail-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                            gap: 1rem;
+                            margin-top: 1rem;
+                        }
+                        .detail-hour {
+                            background: rgba(255,255,255,0.8);
+                            padding: 1rem;
+                            border-radius: 10px;
+                            text-align: center;
+                        }
+                    </style>
+                `;
+            } else {
+                // Create detailed daily view
+                const dailyHTML = data.daily.map(day => `
+                    <div class="detail-day">
+                        <h4>${day.date}</h4>
+                        <img src="${getWeatherIcon(day.icon)}" alt="${day.conditions}" width="60">
+                        <div>${day.conditions}</div>
+                        <div>High: ${Math.round(day.tempmax)}°F / Low: ${Math.round(day.tempmin)}°F</div>
+                        <div>Precip: ${day.precipProb}%</div>
+                        <div>Wind: ${Math.round(day.windspeed)} mph</div>
+                        <div>Humidity: ${day.humidity}%</div>
+                        <p>${day.description}</p>
+                    </div>
+                `).join('');
+                
+                detailContent.innerHTML = `
+                    <h3>7-Day Detailed Forecast</h3>
+                    <div class="daily-detail-grid">
+                        ${dailyHTML}
+                    </div>
+                    <style>
+                        .daily-detail-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                            gap: 1.5rem;
+                            margin-top: 1rem;
+                        }
+                        .detail-day {
+                            background: rgba(255,255,255,0.8);
+                            padding: 1.5rem;
+                            border-radius: 10px;
+                            text-align: center;
+                        }
+                        .detail-day h4 {
+                            color: var(--secondary);
+                            margin-bottom: 0.5rem;
+                        }
+                        .detail-day p {
+                            margin-top: 0.5rem;
+                            font-size: 0.9rem;
+                            color: #666;
+                        }
+                    </style>
+                `;
+            }
+            
+            detailPage.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Show hour detail
+        function showHourDetail(hourData) {
+            detailLocation.textContent = `Hourly Detail for ${hourData.time}`;
+            detailContent.innerHTML = `
+                <h3>Weather at ${hourData.time}</h3>
+                <div style="text-align: center; margin: 2rem 0;">
+                    <img src="${getWeatherIcon(hourData.icon)}" alt="Weather" width="100">
+                    <div style="font-size: 2rem; margin: 1rem 0;">${Math.round(hourData.temp)}°F</div>
+                    <div>${hourData.conditions}</div>
+                </div>
+                <div class="detail-metrics">
+                    <div><i class="fas fa-tint"></i> Humidity: ${hourData.humidity}%</div>
+                    <div><i class="fas fa-wind"></i> Wind: ${Math.round(hourData.windspeed)} mph ${getWindDirection(hourData.winddir)}</div>
+                    <div><i class="fas fa-umbrella"></i> Precipitation: ${hourData.precipProb}% chance</div>
+                    <div><i class="fas fa-cloud-rain"></i> Amount: ${hourData.precip || 0} in</div>
+                </div>
+                <style>
+                    .detail-metrics {
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 1rem;
+                        margin-top: 2rem;
+                    }
+                    .detail-metrics div {
+                        background: rgba(255,255,255,0.8);
+                        padding: 1rem;
+                        border-radius: 10px;
+                    }
+                </style>
+            `;
+            
+            detailPage.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Show day detail
+        function showDayDetail(dayData) {
+            detailLocation.textContent = `Daily Forecast for ${dayData.date.split(',')[0]}`;
+            detailContent.innerHTML = `
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <img src="${getWeatherIcon(dayData.icon)}" alt="${dayData.conditions}" width="120">
+                    <div style="font-size: 2.5rem; margin: 1rem 0;">${Math.round(dayData.tempmax)}°/${Math.round(dayData.tempmin)}°</div>
+                    <div style="font-size: 1.5rem;">${dayData.conditions}</div>
+                </div>
+                
+                <p style="text-align: center; margin-bottom: 2rem; font-size: 1.1rem;">
+                    ${dayData.description}
+                </p>
+                
+                <div class="day-detail-metrics">
+                    <div>
+                        <i class="fas fa-sun"></i>
+                        <div>
+                            <div>Sunrise/Sunset</div>
+                            <div>${dayData.sunrise} / ${dayData.sunset}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <i class="fas fa-wind"></i>
+                        <div>
+                            <div>Wind</div>
+                            <div>${Math.round(dayData.windspeed)} mph ${getWindDirection(dayData.winddir)}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <i class="fas fa-tint"></i>
+                        <div>
+                            <div>Humidity</div>
+                            <div>${dayData.humidity}%</div>
+                        </div>
+                    </div>
+                    <div>
+                        <i class="fas fa-umbrella"></i>
+                        <div>
+                            <div>Precipitation</div>
+                            <div>${dayData.precipProb}% chance (${dayData.precip || 0} in)</div>
+                        </div>
+                    </div>
+                    <div>
+                        <i class="fas fa-temperature-high"></i>
+                        <div>
+                            <div>Avg. Temperature</div>
+                            <div>${Math.round(dayData.temp)}°F</div>
+                        </div>
+                    </div>
+                    <div>
+                        <i class="fas fa-cloud"></i>
+                        <div>
+                            <div>Conditions</div>
+                            <div>${dayData.conditions}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    .day-detail-metrics {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                        gap: 1rem;
+                    }
+                    .day-detail-metrics > div {
+                        background: rgba(255,255,255,0.8);
+                        padding: 1rem;
+                        border-radius: 10px;
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                    }
+                    .day-detail-metrics i {
+                        font-size: 1.5rem;
+                        color: var(--primary);
+                    }
+                    .day-detail-metrics div div:first-child {
+                        font-size: 0.9rem;
+                        color: #666;
+                    }
+                    .day-detail-metrics div div:last-child {
+                        font-weight: 500;
+                    }
+                </style>
+            `;
+            
+            detailPage.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Get wind direction from degrees
+        function getWindDirection(degrees) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round(degrees / 45) % 8;
+            return directions[index];
+        }
+
+        // Close detail page
+        closeDetailBtn.addEventListener('click', () => {
+            detailPage.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+
+        // Get appropriate weather icon
+        function getWeatherIcon(iconName) {
+            const iconMap = {
+                'snow': 'https://cdn-icons-png.flaticon.com/512/2843/2843311.png',
+                'rain': 'https://cdn-icons-png.flaticon.com/512/4150/4150904.png',
+                'fog': 'https://cdn-icons-png.flaticon.com/512/2936/2936886.png',
+                'wind': 'https://cdn-icons-png.flaticon.com/512/414/414927.png',
+                'cloudy': 'https://cdn-icons-png.flaticon.com/512/414/414825.png',
+                'partly-cloudy-day': 'https://cdn-icons-png.flaticon.com/512/3222/3222807.png',
+                'partly-cloudy-night': 'https://cdn-icons-png.flaticon.com/512/3222/3222807.png',
+                'clear-day': 'https://cdn-icons-png.flaticon.com/512/3222/3222675.png',
+                'clear-night': 'https://cdn-icons-png.flaticon.com/512/3222/3222692.png',
+                'thunder-rain': 'https://cdn-icons-png.flaticon.com/512/4150/4150844.png'
+            };
+            
+            // Map Visual Crossing icons to our icon set
+            const vcIconMap = {
+                'snow': 'snow',
+                'rain': 'rain',
+                'fog': 'fog',
+                'wind': 'wind',
+                'cloudy': 'cloudy',
+                'partly-cloudy': 'partly-cloudy-day',
+                'clear-day': 'clear-day',
+                'clear-night': 'clear-night',
+                'thunder-rain': 'thunder-rain',
+                'thunder-showers-day': 'thunder-rain',
+                'thunder-showers-night': 'thunder-rain',
+                'showers-day': 'rain',
+                'showers-night': 'rain'
+            };
+            
+            const mappedIcon = vcIconMap[iconName] || iconName;
+            return iconMap[mappedIcon] || 'https://cdn-icons-png.flaticon.com/512/3222/3222675.png';
+        }
+
+        // SMS Alert Registration
+        registerBtn.addEventListener('click', async () => {
+            const phoneNumber = phoneNumberInput.value.trim();
+            const city = citySelect.value;
+            const district = districtSelect.value;
+            
+            if (!phoneNumber || !/^\d{10}$/.test(phoneNumber)) {
+                smsStatusElement.textContent = 'Please enter a valid 10-digit mobile number';
+                smsStatusElement.style.color = 'red';
+                return;
+            }
+            
+            if (!city || !district) {
+                smsStatusElement.textContent = 'Please select both district and city';
+                smsStatusElement.style.color = 'red';
+                return;
+            }
+            
+            try {
+                smsStatusElement.textContent = 'Registering for hourly alerts...';
+                smsStatusElement.style.color = 'var(--primary)';
+                
+                const response = await fetch('/api/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phoneNumber,
+                        district,
+                        city
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    smsStatusElement.textContent = `Success! You will receive hourly weather alerts for ${city} at ${phoneNumber}`;
+                    smsStatusElement.style.color = 'green';
+                    phoneNumberInput.value = '';
+                } else {
+                    smsStatusElement.textContent = data.error || 'Registration failed';
+                    smsStatusElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                smsStatusElement.textContent = 'Failed to connect to server';
+                smsStatusElement.style.color = 'red';
+            }
+        });
+
+        // Fetch weather data when city is selected
+        citySelect.addEventListener('change', async (e) => {
+            const city = e.target.value;
+            const district = districtSelect.value;
+            
+            if (city && district) {
+                try {
+                    const data = await fetchWeatherData(city, district);
+                    updateWeatherUI(data);
+                } catch (error) {
+                    alert('Failed to fetch weather data. Please try again.');
+                }
+            }
+        });
+
+        // Initialize the app
+        initializeDistricts();
+    </script>
+</body>
+</html>
